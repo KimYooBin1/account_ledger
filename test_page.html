@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>확장 프로그램 테스트 페이지</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 800px;
+        width: 100%;
+        padding: 40px;
+      }
+
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 40px;
+      }
+
+      .test-section {
+        background: #f8f9fa;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        border: 2px solid #e9ecef;
+      }
+
+      .test-section h2 {
+        color: #495057;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: bold;
+      }
+
+      .badge-login {
+        background: #4caf50;
+        color: white;
+      }
+      .badge-signup {
+        background: #2196f3;
+        color: white;
+      }
+      .badge-password {
+        background: #ff9800;
+        color: white;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      label {
+        font-weight: 600;
+        color: #495057;
+        font-size: 14px;
+      }
+
+      input {
+        padding: 12px 15px;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.3s;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      button {
+        padding: 12px 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-top: 10px;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      .info-box {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+      }
+
+      .info-box p {
+        color: #0d47a1;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .success-message {
+        background: #d4edda;
+        color: #155724;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+        border-left: 4px solid #28a745;
+        display: none;
+      }
+
+      .console-output {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 15px;
+        border-radius: 8px;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        margin-top: 20px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .console-output .log {
+        margin: 5px 0;
+        padding: 3px;
+      }
+
+      .console-output .log.success {
+        color: #4caf50;
+      }
+
+      .console-output .log.error {
+        color: #f44336;
+      }
+
+      .console-output .log.info {
+        color: #2196f3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔐 계정 기록장 테스트 페이지</h1>
+      <p class="subtitle">
+        이 페이지에서 확장 프로그램의 자동 감지 기능을 테스트할 수 있습니다.
+      </p>
+
+      <!-- 로그인 폼 -->
+      <div class="test-section">
+        <h2>
+          <span class="badge badge-login">로그인</span>
+          로그인 감지 테스트
+        </h2>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="login-email">이메일</label>
+            <input
+              type="email"
+              id="login-email"
+              name="email"
+              placeholder="your@email.com"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="login-password">비밀번호</label>
+            <input
+              type="password"
+              id="login-password"
+              name="password"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <button type="submit">로그인</button>
+        </form>
+        <div class="info-box">
+          <p><strong>테스트 방법:</strong></p>
+          <p>1. F12를 눌러 개발자 도구를 엽니다.</p>
+          <p>2. Console 탭에서 "Account Ledger" 메시지를 확인합니다.</p>
+          <p>3. 위 폼을 제출하면 확장 프로그램이 로그인을 감지합니다.</p>
+          <p>4. 팝업이나 옵션 페이지에서 계정이 추가되었는지 확인합니다.</p>
+        </div>
+        <div class="success-message" id="loginSuccess">
+          ✅ 로그인 폼이 제출되었습니다! 확장 프로그램이 이벤트를 감지했는지
+          확인하세요.
+        </div>
+      </div>
+
+      <!-- 회원가입 폼 -->
+      <div class="test-section">
+        <h2>
+          <span class="badge badge-signup">회원가입</span>
+          회원가입 감지 테스트
+        </h2>
+        <form id="signupForm">
+          <div class="form-group">
+            <label for="signup-email">이메일</label>
+            <input
+              type="email"
+              id="signup-email"
+              name="email"
+              placeholder="your@email.com"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="signup-password">비밀번호</label>
+            <input
+              type="password"
+              id="signup-password"
+              name="password"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="signup-password-confirm">비밀번호 확인</label>
+            <input
+              type="password"
+              id="signup-password-confirm"
+              name="password_confirm"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <button type="submit">회원가입</button>
+        </form>
+        <div class="info-box">
+          <p><strong>감지 조건:</strong></p>
+          <p>• 2개 이상의 비밀번호 필드 (비밀번호 확인)</p>
+          <p>• 버튼 텍스트에 "sign up", "register", "회원가입" 등 포함</p>
+          <p>• 폼 ID나 클래스에 "signup" 포함</p>
+        </div>
+        <div class="success-message" id="signupSuccess">
+          ✅ 회원가입 폼이 제출되었습니다! 확장 프로그램이 이벤트를 감지했는지
+          확인하세요.
+        </div>
+      </div>
+
+      <!-- 비밀번호 변경 폼 -->
+      <div class="test-section">
+        <h2>
+          <span class="badge badge-password">비밀번호 변경</span>
+          비밀번호 변경 감지 테스트
+        </h2>
+        <form id="passwordChangeForm">
+          <div class="form-group">
+            <label for="old-password">현재 비밀번호</label>
+            <input
+              type="password"
+              id="old-password"
+              name="old_password"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="new-password">새 비밀번호</label>
+            <input
+              type="password"
+              id="new-password"
+              name="new_password"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="new-password-confirm">새 비밀번호 확인</label>
+            <input
+              type="password"
+              id="new-password-confirm"
+              name="new_password_confirm"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <button type="submit">비밀번호 변경</button>
+        </form>
+        <div class="info-box">
+          <p><strong>감지 조건:</strong></p>
+          <p>• 2개 이상의 비밀번호 필드</p>
+          <p>• 버튼 텍스트에 "change password", "비밀번호 변경" 등 포함</p>
+          <p>• 폼 ID나 클래스에 "password" 포함</p>
+        </div>
+        <div class="success-message" id="passwordSuccess">
+          ✅ 비밀번호 변경 폼이 제출되었습니다! 확장 프로그램이 이벤트를
+          감지했는지 확인하세요.
+        </div>
+      </div>
+
+      <!-- Console Output -->
+      <div class="test-section">
+        <h2>📋 이벤트 로그</h2>
+        <div class="console-output" id="consoleOutput">
+          <div class="log info">
+            페이지가 로드되었습니다. Content Script가 실행 중인지 확인하세요.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 로그 출력 함수
+      function addLog(message, type = "info") {
+        const output = document.getElementById("consoleOutput");
+        const log = document.createElement("div");
+        log.className = `log ${type}`;
+        log.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        output.appendChild(log);
+        output.scrollTop = output.scrollHeight;
+      }
+
+      // 폼 제출 핸들러
+      document.getElementById("loginForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        addLog("로그인 폼 제출됨 - 확장 프로그램이 감지 중...", "success");
+        document.getElementById("loginSuccess").style.display = "block";
+        setTimeout(() => {
+          document.getElementById("loginSuccess").style.display = "none";
+        }, 5000);
+      });
+
+      document.getElementById("signupForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        addLog("회원가입 폼 제출됨 - 확장 프로그램이 감지 중...", "success");
+        document.getElementById("signupSuccess").style.display = "block";
+        setTimeout(() => {
+          document.getElementById("signupSuccess").style.display = "none";
+        }, 5000);
+      });
+
+      document
+        .getElementById("passwordChangeForm")
+        .addEventListener("submit", (e) => {
+          e.preventDefault();
+          addLog(
+            "비밀번호 변경 폼 제출됨 - 확장 프로그램이 감지 중...",
+            "success"
+          );
+          document.getElementById("passwordSuccess").style.display = "block";
+          setTimeout(() => {
+            document.getElementById("passwordSuccess").style.display = "none";
+          }, 5000);
+        });
+
+      // Content Script 로드 감지
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          addLog(
+            "Content Script가 로드되었는지 F12 Console에서 확인하세요.",
+            "info"
+          );
+          addLog('예상 메시지: "Account Ledger Content Script loaded"', "info");
+        }, 1000);
+      });
+
+      // Chrome Extension 메시지 리스너 (디버깅용)
+      if (typeof chrome !== "undefined" && chrome.runtime) {
+        addLog("Chrome Extension API 사용 가능", "success");
+      } else {
+        addLog("Chrome Extension API 사용 불가 (일반 웹페이지)", "info");
+      }
+    </script>
+  </body>
+</html>

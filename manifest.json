@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "계정 기록장 (Account Ledger)",
+  "version": "1.0.0",
+  "description": "웹사이트 계정 관리 자동화 및 비밀번호 변경 주기 알림을 통한 보안 강화",
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/content_script.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "options_page": "src/options/options.html",
+  "permissions": ["storage", "alarms", "notifications", "tabs", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/config/firebase-config.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

@@ -1,0 +1,543 @@
+// Options Page JavaScript
+console.log("Options page loaded");
+
+let allAccounts = [];
+let currentEditingDomain = null;
+
+// 모든 계정 가져오기
+async function loadAccounts() {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ type: "GET_ACCOUNTS" }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+      } else if (response && response.success) {
+        resolve(response.accounts || []);
+      } else {
+        reject(new Error(response?.error || "Failed to load accounts"));
+      }
+    });
+  });
+}
+
+// 설정 로드
+async function loadSettings() {
+  const settings = await chrome.storage.sync.get([
+    "passwordChangePeriod",
+    "notificationsEnabled",
+  ]);
+  return {
+    passwordChangePeriod: settings.passwordChangePeriod || 90,
+    notificationsEnabled: settings.notificationsEnabled !== false,
+  };
+}
+
+// 통계 업데이트
+function updateStats() {
+  const totalAccounts = allAccounts.length;
+  const warningAccounts = allAccounts.filter((acc) => acc.isWarning).length;
+
+  document.getElementById("totalAccounts").textContent = totalAccounts;
+  document.getElementById("warningAccounts").textContent = warningAccounts;
+}
+
+// 계정 테이블 렌더링
+function renderAccountsTable(accounts = allAccounts) {
+  const tbody = document.getElementById("accountsTableBody");
+  tbody.innerHTML = "";
+
+  if (accounts.length === 0) {
+    document.getElementById("loadingState").classList.add("hidden");
+    document.getElementById("accountsTableContainer").classList.add("hidden");
+    document.getElementById("emptyState").classList.remove("hidden");
+    return;
+  }
+
+  document.getElementById("loadingState").classList.add("hidden");
+  document.getElementById("emptyState").classList.add("hidden");
+  document.getElementById("accountsTableContainer").classList.remove("hidden");
+
+  // 날짜 포맷팅
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleString("ko-KR", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  // 경고 여부에 따라 정렬 (경고 있는 것 먼저)
+  const sortedAccounts = [...accounts].sort((a, b) => {
+    if (a.isWarning && !b.isWarning) return -1;
+    if (!a.isWarning && b.isWarning) return 1;
+    return 0;
+  });
+
+  sortedAccounts.forEach((account) => {
+    const tr = document.createElement("tr");
+    tr.className = account.isWarning ? "bg-red-50" : "hover:bg-gray-50";
+
+    tr.innerHTML = `
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="flex items-center">
+          <a href="https://${
+            account.domain
+          }" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium">
+            ${account.domain}
+          </a>
+        </div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+        ${formatDate(account.signUpDate)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+        ${formatDate(account.lastLoginDate)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+        ${formatDate(account.lastPasswordChangeDate)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        ${
+          account.isWarning
+            ? '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">경고</span>'
+            : '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">정상</span>'
+        }
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm">
+        <div class="flex gap-2">
+          <button class="update-login-btn px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition" data-domain="${
+            account.domain
+          }">
+            로그인
+          </button>
+          <button class="update-password-btn px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition" data-domain="${
+            account.domain
+          }">
+            비밀번호
+          </button>
+          <button class="edit-btn px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition" data-domain="${
+            account.domain
+          }">
+            수정
+          </button>
+          <button class="delete-btn px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition" data-domain="${
+            account.domain
+          }">
+            삭제
+          </button>
+        </div>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  // 버튼 이벤트 리스너 추가
+  attachTableEventListeners();
+}
+
+// 테이블 버튼 이벤트 리스너
+function attachTableEventListeners() {
+  // 로그인 업데이트
+  document.querySelectorAll(".update-login-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const domain = e.target.dataset.domain;
+      await updateAccount(domain, { lastLoginDate: new Date().toISOString() });
+      await refreshData();
+    });
+  });
+
+  // 비밀번호 업데이트
+  document.querySelectorAll(".update-password-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const domain = e.target.dataset.domain;
+      await updateAccount(domain, {
+        lastPasswordChangeDate: new Date().toISOString(),
+        isWarning: false,
+      });
+      await refreshData();
+    });
+  });
+
+  // 수정
+  document.querySelectorAll(".edit-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const domain = e.target.dataset.domain;
+      openEditModal(domain);
+    });
+  });
+
+  // 삭제
+  document.querySelectorAll(".delete-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const domain = e.target.dataset.domain;
+      if (confirm(`'${domain}' 계정을 삭제하시겠습니까?`)) {
+        await deleteAccount(domain);
+        await refreshData();
+      }
+    });
+  });
+}
+
+// 계정 업데이트
+async function updateAccount(domain, updates) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      {
+        type: "UPDATE_ACCOUNT",
+        domain: domain,
+        updates: updates,
+      },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else if (response && response.success) {
+          resolve(response.data);
+        } else {
+          reject(new Error(response?.error || "Failed to update account"));
+        }
+      }
+    );
+  });
+}
+
+// 계정 삭제
+async function deleteAccount(domain) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      {
+        type: "DELETE_ACCOUNT",
+        domain: domain,
+      },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else if (response && response.success) {
+          resolve(response.data);
+        } else {
+          reject(new Error(response?.error || "Failed to delete account"));
+        }
+      }
+    );
+  });
+}
+
+// 수정 모달 열기
+function openEditModal(domain) {
+  const account = allAccounts.find((acc) => acc.domain === domain);
+  if (!account) return;
+
+  currentEditingDomain = domain;
+
+  document.getElementById("editDomain").value = domain;
+
+  // ISO 형식을 datetime-local 형식으로 변환
+  const toDatetimeLocal = (isoStr) => {
+    if (!isoStr) return "";
+    try {
+      const date = new Date(isoStr);
+      const offset = date.getTimezoneOffset();
+      const localDate = new Date(date.getTime() - offset * 60 * 1000);
+      return localDate.toISOString().slice(0, 16);
+    } catch {
+      return "";
+    }
+  };
+
+  document.getElementById("editSignUpDate").value = toDatetimeLocal(
+    account.signUpDate
+  );
+  document.getElementById("editLastLoginDate").value = toDatetimeLocal(
+    account.lastLoginDate
+  );
+  document.getElementById("editLastPasswordChangeDate").value = toDatetimeLocal(
+    account.lastPasswordChangeDate
+  );
+
+  document.getElementById("editModal").classList.remove("hidden");
+}
+
+// 수정 모달 닫기
+function closeEditModal() {
+  currentEditingDomain = null;
+  document.getElementById("editModal").classList.add("hidden");
+}
+
+// 수정 저장
+async function saveEdit() {
+  if (!currentEditingDomain) return;
+
+  const toISO = (datetimeLocal) => {
+    if (!datetimeLocal) return null;
+    try {
+      return new Date(datetimeLocal).toISOString();
+    } catch {
+      return null;
+    }
+  };
+
+  const updates = {
+    signUpDate: toISO(document.getElementById("editSignUpDate").value),
+    lastLoginDate: toISO(document.getElementById("editLastLoginDate").value),
+    lastPasswordChangeDate: toISO(
+      document.getElementById("editLastPasswordChangeDate").value
+    ),
+  };
+
+  try {
+    await updateAccount(currentEditingDomain, updates);
+    closeEditModal();
+    await refreshData();
+  } catch (error) {
+    console.error("Error saving edit:", error);
+    alert("저장 중 오류가 발생했습니다.");
+  }
+}
+
+// 데이터 새로고침
+async function refreshData() {
+  try {
+    allAccounts = await loadAccounts();
+    updateStats();
+    renderAccountsTable();
+
+    // 설정 업데이트
+    const settings = await loadSettings();
+    document.getElementById("currentPeriod").textContent =
+      settings.passwordChangePeriod;
+    document.getElementById("notificationStatus").textContent =
+      settings.notificationsEnabled ? "ON" : "OFF";
+    document.getElementById("periodInput").value =
+      settings.passwordChangePeriod;
+  } catch (error) {
+    console.error("Error refreshing data:", error);
+  }
+}
+
+// URL에서 도메인 추출
+function extractDomain(url) {
+  try {
+    // http:// 또는 https://가 없으면 추가
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      url = "https://" + url;
+    }
+
+    const urlObj = new URL(url);
+    return urlObj.hostname.replace("www.", "");
+  } catch {
+    return null;
+  }
+}
+
+// 수동 계정 등록
+async function addManualAccount() {
+  const urlInput = document.getElementById("manualUrlInput");
+  const url = urlInput.value.trim();
+
+  if (!url) {
+    alert("URL을 입력해주세요.");
+    return;
+  }
+
+  const domain = extractDomain(url);
+  if (!domain) {
+    alert("유효한 URL을 입력해주세요.");
+    return;
+  }
+
+  try {
+    // SIGNUP 이벤트로 전송
+    chrome.runtime.sendMessage(
+      {
+        type: "EVENT_DETECTED",
+        action: "SIGNUP",
+        domain: domain,
+      },
+      async (response) => {
+        if (response && response.success) {
+          urlInput.value = "";
+          await refreshData();
+          alert(`${domain}이(가) 등록되었습니다.`);
+        } else {
+          alert("등록 중 오류가 발생했습니다.");
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error adding manual account:", error);
+    alert("등록 중 오류가 발생했습니다.");
+  }
+}
+
+// CSV 파일 가져오기
+async function importCsvFile() {
+  const fileInput = document.getElementById("csvFileInput");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert("파일을 선택해주세요.");
+    return;
+  }
+
+  try {
+    const text = await file.text();
+    const lines = text.split("\n");
+
+    // 헤더 확인 (첫 번째 줄)
+    const header = lines[0].toLowerCase();
+    if (!header.includes("url")) {
+      alert("CSV 파일에 url 컬럼이 없습니다.");
+      return;
+    }
+
+    // 헤더에서 url 컬럼 인덱스 찾기
+    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+    const urlIndex = headers.indexOf("url");
+
+    if (urlIndex === -1) {
+      alert("CSV 파일에 url 컬럼을 찾을 수 없습니다.");
+      return;
+    }
+
+    // 도메인 추출
+    const domains = new Set();
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const columns = line.split(",");
+      if (columns.length > urlIndex) {
+        const url = columns[urlIndex].trim().replace(/"/g, "");
+        const domain = extractDomain(url);
+        if (domain) {
+          domains.add(domain);
+        }
+      }
+    }
+
+    if (domains.size === 0) {
+      alert("유효한 도메인을 찾을 수 없습니다.");
+      return;
+    }
+
+    // 각 도메인을 Firestore에 추가
+    let successCount = 0;
+    for (const domain of domains) {
+      try {
+        await new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage(
+            {
+              type: "EVENT_DETECTED",
+              action: "SIGNUP",
+              domain: domain,
+            },
+            (response) => {
+              if (response && response.success) {
+                successCount++;
+                resolve();
+              } else {
+                reject();
+              }
+            }
+          );
+        });
+      } catch (error) {
+        console.error(`Failed to import ${domain}:`, error);
+      }
+    }
+
+    fileInput.value = "";
+    await refreshData();
+    alert(`${successCount}개의 계정이 가져와졌습니다.`);
+  } catch (error) {
+    console.error("Error importing CSV:", error);
+    alert("CSV 가져오기 중 오류가 발생했습니다.");
+  }
+}
+
+// 비밀번호 변경 주기 저장
+async function savePeriod() {
+  const period = parseInt(document.getElementById("periodInput").value);
+
+  if (isNaN(period) || period < 1 || period > 365) {
+    alert("1~365 사이의 값을 입력해주세요.");
+    return;
+  }
+
+  try {
+    await chrome.storage.sync.set({ passwordChangePeriod: period });
+    await refreshData();
+    alert("설정이 저장되었습니다.");
+  } catch (error) {
+    console.error("Error saving period:", error);
+    alert("저장 중 오류가 발생했습니다.");
+  }
+}
+
+// 검색 기능
+function searchAccounts() {
+  const searchTerm = document
+    .getElementById("searchInput")
+    .value.toLowerCase()
+    .trim();
+
+  if (!searchTerm) {
+    renderAccountsTable(allAccounts);
+    return;
+  }
+
+  const filtered = allAccounts.filter((acc) =>
+    acc.domain.toLowerCase().includes(searchTerm)
+  );
+
+  renderAccountsTable(filtered);
+}
+
+// 이벤트 리스너
+document.addEventListener("DOMContentLoaded", () => {
+  // 초기 로드
+  refreshData();
+
+  // 수동 등록
+  document
+    .getElementById("addManualAccountBtn")
+    .addEventListener("click", addManualAccount);
+
+  // CSV 가져오기
+  document
+    .getElementById("importCsvBtn")
+    .addEventListener("click", importCsvFile);
+
+  // 주기 저장
+  document
+    .getElementById("savePeriodBtn")
+    .addEventListener("click", savePeriod);
+
+  // 검색
+  document
+    .getElementById("searchInput")
+    .addEventListener("input", searchAccounts);
+
+  // 새로고침
+  document.getElementById("refreshBtn").addEventListener("click", refreshData);
+
+  // 모달 이벤트
+  document.getElementById("saveEditBtn").addEventListener("click", saveEdit);
+  document
+    .getElementById("cancelEditBtn")
+    .addEventListener("click", closeEditModal);
+
+  // 모달 배경 클릭 시 닫기
+  document.getElementById("editModal").addEventListener("click", (e) => {
+    if (e.target.id === "editModal") {
+      closeEditModal();
+    }
+  });
+});
