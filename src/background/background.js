@@ -1,21 +1,55 @@
 // Background Service Worker (Manifest V3)
-// 메시지 처리, Firestore 연동, 알람 기능 구현
+// Firebase SDK를 importScripts로 로드
 
-import {
-  initializeFirebase,
-  getDatabase,
-  getAccountsCollectionPath,
-  getCurrentUserId,
-} from "../config/firebase-init.js";
+// Firebase SDK 로드 (로컬 파일 - CSP 정책 준수)
+importScripts("/libs/firebase-app-compat.js");
+importScripts("/libs/firebase-auth-compat.js");
+importScripts("/libs/firebase-firestore-compat.js");
+
+// Firebase 설정 로드
+importScripts("/firebase-config.js");
 
 let isInitialized = false;
+let db = null;
+let auth = null;
 
 // Firebase 초기화
-async function ensureFirebaseInitialized() {
-  if (!isInitialized) {
-    await initializeFirebase();
-    isInitialized = true;
+async function initializeFirebase() {
+  if (isInitialized) {
+    return { db, auth };
   }
+
+  try {
+    // Firebase 앱 초기화
+    const app = firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db = firebase.firestore();
+
+    // 익명 로그인
+    await auth.signInAnonymously();
+    console.log("Firebase initialized and signed in anonymously");
+    console.log("User ID:", auth.currentUser.uid);
+
+    isInitialized = true;
+    return { db, auth };
+  } catch (error) {
+    console.error("Firebase initialization error:", error);
+    throw error;
+  }
+}
+
+// 현재 사용자 ID 가져오기
+function getCurrentUserId() {
+  if (!auth || !auth.currentUser) {
+    throw new Error("User not authenticated");
+  }
+  return auth.currentUser.uid;
+}
+
+// 계정 컬렉션 경로 가져오기
+function getAccountsCollectionPath() {
+  const userId = getCurrentUserId();
+  return `users/${userId}/accounts`;
 }
 
 // 확장 프로그램 설치 시 초기화
@@ -23,7 +57,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   console.log("Extension installed:", details.reason);
 
   try {
-    await ensureFirebaseInitialized();
+    await initializeFirebase();
 
     // 주기적 알람 설정 (매일 1회 비밀번호 만료 검사)
     chrome.alarms.create("check_password_expiry", {
@@ -50,7 +84,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleEventDetection(message, sender)
       .then((result) => sendResponse({ success: true, data: result }))
       .catch((error) => sendResponse({ success: false, error: error.message }));
-    return true; // 비동기 응답을 위해 true 반환
+    return true; // 비동기 응답
   }
 
   if (message.type === "GET_ACCOUNTS") {
@@ -75,27 +109,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// 이벤트 감지 처리 (회원가입, 로그인, 비밀번호 변경)
+// 이벤트 감지 처리
 async function handleEventDetection(message, sender) {
-  await ensureFirebaseInitialized();
+  await initializeFirebase();
 
   const { action, domain } = message;
-  const db = getDatabase();
-  const { doc, setDoc, updateDoc, getDoc, serverTimestamp } = await import(
-    "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
-  );
-
   const collectionPath = getAccountsCollectionPath();
-  const docRef = doc(db, collectionPath, domain);
+  const docRef = db.collection(collectionPath).doc(domain);
 
   try {
-    const docSnap = await getDoc(docRef);
+    const docSnap = await docRef.get();
     const currentTime = new Date().toISOString();
 
     if (action === "SIGNUP") {
       // 회원가입 감지
-      if (!docSnap.exists()) {
-        await setDoc(docRef, {
+      if (!docSnap.exists) {
+        await docRef.set({
           domain: domain,
           signUpDate: currentTime,
           lastLoginDate: currentTime,
@@ -107,13 +136,13 @@ async function handleEventDetection(message, sender) {
       }
     } else if (action === "LOGIN") {
       // 로그인 감지
-      if (docSnap.exists()) {
-        await updateDoc(docRef, {
+      if (docSnap.exists) {
+        await docRef.update({
           lastLoginDate: currentTime,
         });
       } else {
         // 계정이 없으면 새로 생성
-        await setDoc(docRef, {
+        await docRef.set({
           domain: domain,
           signUpDate: currentTime,
           lastLoginDate: currentTime,
@@ -125,13 +154,13 @@ async function handleEventDetection(message, sender) {
       console.log(`Login recorded: ${domain}`);
     } else if (action === "PASS_CHANGE") {
       // 비밀번호 변경 감지
-      if (docSnap.exists()) {
-        await updateDoc(docRef, {
+      if (docSnap.exists) {
+        await docRef.update({
           lastPasswordChangeDate: currentTime,
-          isWarning: false, // 비밀번호 변경 시 경고 해제
+          isWarning: false,
         });
       } else {
-        await setDoc(docRef, {
+        await docRef.set({
           domain: domain,
           signUpDate: null,
           lastLoginDate: null,
@@ -152,15 +181,10 @@ async function handleEventDetection(message, sender) {
 
 // 모든 계정 가져오기
 async function getAccounts() {
-  await ensureFirebaseInitialized();
-
-  const db = getDatabase();
-  const { collection, getDocs } = await import(
-    "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
-  );
+  await initializeFirebase();
 
   const collectionPath = getAccountsCollectionPath();
-  const querySnapshot = await getDocs(collection(db, collectionPath));
+  const querySnapshot = await db.collection(collectionPath).get();
 
   const accounts = [];
   querySnapshot.forEach((doc) => {
@@ -175,37 +199,27 @@ async function getAccounts() {
 
 // 계정 업데이트
 async function updateAccount(domain, updates) {
-  await ensureFirebaseInitialized();
-
-  const db = getDatabase();
-  const { doc, updateDoc } = await import(
-    "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
-  );
+  await initializeFirebase();
 
   const collectionPath = getAccountsCollectionPath();
-  const docRef = doc(db, collectionPath, domain);
+  const docRef = db.collection(collectionPath).doc(domain);
 
-  await updateDoc(docRef, updates);
+  await docRef.update(updates);
   return { domain, updates };
 }
 
 // 계정 삭제
 async function deleteAccount(domain) {
-  await ensureFirebaseInitialized();
-
-  const db = getDatabase();
-  const { doc, deleteDoc } = await import(
-    "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
-  );
+  await initializeFirebase();
 
   const collectionPath = getAccountsCollectionPath();
-  const docRef = doc(db, collectionPath, domain);
+  const docRef = db.collection(collectionPath).doc(domain);
 
-  await deleteDoc(docRef);
+  await docRef.delete();
   return { domain };
 }
 
-// 알람 처리 (비밀번호 만료 검사)
+// 알람 처리
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === "check_password_expiry") {
     console.log("Checking password expiry...");
@@ -216,9 +230,9 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // 비밀번호 만료 검사
 async function checkPasswordExpiry() {
   try {
-    await ensureFirebaseInitialized();
+    await initializeFirebase();
 
-    // 설정에서 비밀번호 변경 주기 가져오기
+    // 설정 가져오기
     const settings = await chrome.storage.sync.get([
       "passwordChangePeriod",
       "notificationsEnabled",

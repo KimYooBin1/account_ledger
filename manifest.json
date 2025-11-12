@@ -17,8 +17,7 @@
     }
   },
   "background": {
-    "service_worker": "src/background/background.js",
-    "type": "module"
+    "service_worker": "src/background/background.js"
   },
   "content_scripts": [
     {
@@ -32,7 +31,7 @@
   "host_permissions": ["<all_urls>"],
   "web_accessible_resources": [
     {
-      "resources": ["src/config/firebase-config.js"],
+      "resources": ["config/firebase-config.js"],
       "matches": ["<all_urls>"]
     }
   ]

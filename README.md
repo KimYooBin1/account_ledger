@@ -239,20 +239,54 @@ account_ledger/
 
 ## 🐛 문제 해결
 
+### CSP 위반 에러 (가장 최근)
+
+**증상**: "Refused to load the script... violates Content Security Policy directive"
+
+**원인**: Chrome Extension은 외부 CDN에서 스크립트를 로드할 수 없음
+
+**해결**: ✅ 이미 수정됨 (Firebase SDK를 `libs/` 폴더에 로컬로 포함)
+
+📖 **상세 가이드**: [BUGFIX_CSP_VIOLATION.md](BUGFIX_CSP_VIOLATION.md)
+
+### Service Worker 등록 실패 (Status Code 15)
+
+**증상**: `chrome://extensions/`에서 "Service worker registration failed. Status code: 15"
+
+**해결**: ✅ 이미 수정됨 (firebase-config.js를 프로젝트 루트에 배치)
+
+📖 **상세 가이드**: [BUGFIX_STATUS_CODE_15.md](BUGFIX_STATUS_CODE_15.md)
+
+### Firebase 연결 오류 (import() 에러)
+
+**증상**: "import() is disallowed on ServiceWorkerGlobalScope"
+
+**해결**: ✅ 이미 수정됨 (importScripts 사용)
+
+📖 **상세 가이드**: [BUGFIX_SERVICE_WORKER.md](BUGFIX_SERVICE_WORKER.md)
+
 ### Firebase 연결 오류
 
 - `firebase-config.js` 파일의 설정이 올바른지 확인하세요.
 - Firebase Console에서 Firestore와 Authentication이 활성화되어 있는지 확인하세요.
+- 루트의 `firebase-config.js`와 `src/config/firebase-config.js` 두 파일 모두 수정했는지 확인
 
 ### 이벤트가 감지되지 않음
 
 - Content Script가 모든 URL에서 실행되도록 `manifest.json`의 `host_permissions`를 확인하세요.
 - 일부 웹사이트는 특수한 구조를 사용하여 감지가 어려울 수 있습니다. 이 경우 수동 등록을 사용하세요.
+- F12 Console에서 "Account Ledger Content Script loaded" 메시지 확인
 
 ### 알림이 표시되지 않음
 
 - Chrome 설정에서 알림 권한이 허용되어 있는지 확인하세요.
 - 옵션 페이지에서 알림 설정이 활성화되어 있는지 확인하세요.
+
+### Service Worker Console을 찾을 수 없음
+
+1. `chrome://extensions/` 접속
+2. 확장 프로그램 카드에서 "Service Worker" 링크 찾기
+3. 링크가 없으면 Service Worker 등록 실패 → 위의 Status Code 15 해결 참고
 
 ## 🚧 향후 계획
 

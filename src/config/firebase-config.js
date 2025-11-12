@@ -2,7 +2,7 @@
 // ⚠️ 사용자 설정 필요: Firebase Console에서 프로젝트를 생성하고 아래 값을 입력하세요
 // Firebase Console: https://console.firebase.google.com/
 
-export const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyB5C8bBwZtdMUEznsTtNLGOuWwgMAjeV34",
   authDomain: "account-ledger-86acf.firebaseapp.com",
   projectId: "account-ledger-86acf",
@@ -13,10 +13,10 @@ export const firebaseConfig = {
 };
 
 // Firestore 컬렉션 경로 설정
-export const FIRESTORE_PATHS = {
+const FIRESTORE_PATHS = {
   // accounts 컬렉션 경로 (사용자별)
   getAccountsPath: (userId) => `users/${userId}/accounts`,
 };
 
 // 기본 비밀번호 변경 주기 (일)
-export const DEFAULT_PASSWORD_CHANGE_PERIOD = 90;
+const DEFAULT_PASSWORD_CHANGE_PERIOD = 90;

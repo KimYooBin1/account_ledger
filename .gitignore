@@ -1,0 +1,43 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.Python
+
+# Firebase 설정 (개인 정보 포함)
+firebase-config.js
+src/background/firebase-config.js
+src/config/firebase-config.js
+
+# 단, 템플릿은 포함
+!firebase-config.template.js
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Chrome Extension
+*.pem
+*.crx
+*.zip
+
+# 로그
+*.log
+
+# 임시 파일
+*.tmp
+*.bak
+*.backup
+.backup/
+
+# 테스트 파일
+test_passwords.csv
+large_test.csv
+
+# PDF (기획서)
+Untitled.pdf
