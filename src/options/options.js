@@ -553,6 +553,38 @@ document.addEventListener("DOMContentLoaded", () => {
   // 새로고침
   document.getElementById("refreshBtn").addEventListener("click", refreshData);
 
+  // CSV 도움말 토글 (클릭 시 펼침/접힘)
+  const csvHelpBtn = document.getElementById("csvHelpBtn");
+  const csvHelpPanel = document.getElementById("csvHelpPanel");
+  if (csvHelpBtn && csvHelpPanel) {
+    csvHelpBtn.addEventListener("click", () => {
+      csvHelpPanel.classList.toggle("hidden");
+    });
+  }
+
+  // Chrome 비밀번호 관리자 열기
+  const openPwdBtn = document.getElementById("openPasswordManagerBtn");
+  if (openPwdBtn) {
+    openPwdBtn.addEventListener("click", openPasswordManagerSafely);
+  }
+
+  // chrome:// 링크 복사
+  const copyUrlBtn = document.getElementById("copyPasswordManagerUrlBtn");
+  if (copyUrlBtn) {
+    copyUrlBtn.addEventListener("click", async () => {
+      const urlInput = document.getElementById("passwordManagerUrl");
+      try {
+        await navigator.clipboard.writeText(urlInput.value);
+        alert("링크가 복사되었습니다. 주소창에 붙여넣기 해주세요.");
+      } catch (e) {
+        // Clipboard가 막힌 경우 선택 상태로 두어 수동 복사를 유도
+        urlInput.focus();
+        urlInput.select();
+        alert("복사 권한이 없어 선택만 했습니다. ⌘+C 로 복사해주세요.");
+      }
+    });
+  }
+
   // 모달 이벤트
   document.getElementById("saveEditBtn").addEventListener("click", saveEdit);
   document
@@ -566,3 +598,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+// 안전하게 비밀번호 관리자 열기 (chrome://는 차단될 수 있어 예외 처리)
+async function openPasswordManagerSafely() {
+  const candidates = [
+    "chrome://password-manager/settings",
+    "chrome://settings/passwords",
+  ];
+
+  for (const url of candidates) {
+    try {
+      await new Promise((resolve, reject) => {
+        try {
+          chrome.tabs.create({ url }, (tab) => {
+            if (chrome.runtime.lastError) {
+              reject(chrome.runtime.lastError);
+            } else {
+              resolve(tab);
+            }
+          });
+        } catch (err) {
+          reject(err);
+        }
+      });
+      // 하나라도 열렸으면 종료
+      return;
+    } catch (e) {
+      // 다음 후보로 진행
+    }
+  }
+
+  // 모두 실패 시 안내
+  alert(
+    "확장에서 chrome:// 페이지를 직접 열 수 없습니다.\n" +
+      "위 안내 패널의 링크를 복사해 주소창에 붙여넣어 접속한 뒤, 내보내기를 진행해주세요."
+  );
+}

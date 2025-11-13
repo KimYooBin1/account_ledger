@@ -71,19 +71,87 @@
 
           <!-- CSV 가져오기 -->
           <div class="border border-gray-200 rounded-lg p-4">
-            <h3 class="font-semibold text-gray-800 mb-3">CSV 파일 가져오기</h3>
-            <input
-              type="file"
-              id="csvFileInput"
-              accept=".csv"
-              class="w-full mb-3 text-sm"
-            />
-            <button
-              id="importCsvBtn"
-              class="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-gray-800">CSV 파일 가져오기</h3>
+              <button
+                id="csvHelpBtn"
+                class="group relative inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none"
+                aria-label="CSV 가져오기 도움말"
+                title="CSV 내보내기 방법 보기"
+              >
+                <span class="text-xs font-bold">?</span>
+                <!-- hover tooltip -->
+                <div
+                  id="csvHelpHover"
+                  class="pointer-events-none absolute right-0 top-8 z-10 hidden group-hover:block w-72 rounded-md border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg"
+                >
+                  Chrome의 비밀번호 관리에서 내보낸 CSV 파일을 선택하세요.
+                  자세한 단계는 버튼을 클릭해 확인할 수 있습니다.
+                </div>
+              </button>
+            </div>
+
+            <div
+              id="csvHelpPanel"
+              class="hidden mb-3 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-gray-800"
             >
-              가져오기
-            </button>
+              <p class="font-semibold mb-2">CSV 내보내기 안내</p>
+              <ol class="list-decimal list-inside space-y-1">
+                <li>아래 버튼으로 비밀번호 관리자 페이지를 엽니다.</li>
+                <li>
+                  메뉴에서
+                  <span class="font-medium"> 비밀번호 내보내기</span>를
+                  선택합니다.
+                </li>
+                <li>
+                  지시에 따라 CSV 파일을 저장한 뒤, 이 화면에서 해당 파일을
+                  선택하고 <span class="font-medium">가져오기</span>를
+                  클릭하세요.
+                </li>
+              </ol>
+              <p class="text-xs text-gray-600 mt-2">
+                참고: 확장에서 chrome:// 페이지를 자동으로 열 수 없을 수
+                있습니다. 열리지 않으면 아래 링크를 복사해 주소창에 붙여넣기
+                해주세요.
+              </p>
+              <div class="mt-2 flex items-center gap-2">
+                <input
+                  id="passwordManagerUrl"
+                  type="text"
+                  readonly
+                  value="chrome://password-manager/settings"
+                  class="flex-1 rounded border border-gray-300 bg-gray-50 px-2 py-1 text-xs"
+                />
+                <button
+                  id="copyPasswordManagerUrlBtn"
+                  class="px-2 py-1 text-xs rounded bg-gray-200 hover:bg-gray-300"
+                >
+                  복사
+                </button>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <input
+                type="file"
+                id="csvFileInput"
+                accept=".csv"
+                class="w-full text-sm"
+              />
+              <button
+                id="importCsvBtn"
+                class="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+              >
+                가져오기
+              </button>
+              <button
+                id="openPasswordManagerBtn"
+                class="w-full px-4 py-2 bg-gray-100 text-gray-800 rounded hover:bg-gray-200 transition"
+                type="button"
+              >
+                Chrome 비밀번호 관리자 열기
+              </button>
+            </div>
           </div>
 
           <!-- 설정 -->
