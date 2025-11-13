@@ -76,9 +76,14 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
-// Chrome 시작 시 만료 검사
+// Chrome 시작 시 만료 검사 및 경고 상태 업데이트
 chrome.runtime.onStartup.addListener(async () => {
-  console.log("Chrome started, checking password expiry...");
+  console.log("Chrome started, updating warning status and checking expiry...");
+
+  // 1. 모든 계정의 경고 상태 업데이트 (정상 <-> 만료 전환)
+  await updateAllWarningStatus();
+
+  // 2. 만료된 계정이 있으면 알림 표시
   await checkPasswordExpiry();
 });
 
