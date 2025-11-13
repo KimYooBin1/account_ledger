@@ -1,4 +1,13 @@
 {
+  "name": "account-ledger",
+  "version": "1.0.0",
+  "description": "Chrome Extension for managing web accounts and password change reminders",
+  "scripts": {
+    "build:css": "npm run build:css:options && npm run build:css:popup",
+    "build:css:options": "tailwindcss -i ./src/options/options.css -o ./src/options/options.build.css --minify",
+    "build:css:popup": "tailwindcss -i ./src/popup/popup.css -o ./src/popup/popup.build.css --minify",
+    "watch:css": "tailwindcss -i ./src/options/options.css -o ./src/options/options.build.css --watch"
+  },
   "devDependencies": {
     "autoprefixer": "^10.4.22",
     "postcss": "^8.5.6",

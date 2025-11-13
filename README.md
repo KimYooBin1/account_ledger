@@ -125,7 +125,27 @@ export const firebaseConfig = {
 
 **⚠️ 중요**: 이 설정 파일을 수정하지 않으면 확장 프로그램이 작동하지 않습니다!
 
-### 3단계: 아이콘 준비 (선택사항)
+### 3단계: 의존성 설치 및 CSS 빌드
+
+프로젝트 루트 디렉터리에서 다음 명령어를 실행합니다:
+
+```bash
+# npm 패키지 설치
+npm install
+
+# Tailwind CSS 빌드
+npm run build:css
+```
+
+또는 직접 빌드 명령어를 사용할 수 있습니다:
+
+```bash
+./node_modules/.bin/tailwindcss -i ./src/options/options.css -o ./src/options/options.build.css --minify
+```
+
+**참고**: CSS 파일이 빌드되지 않으면 옵션 페이지의 디자인이 적용되지 않습니다.
+
+### 4단계: 아이콘 준비 (선택사항)
 
 확장 프로그램 아이콘을 준비합니다. 아래 크기의 PNG 이미지를 `assets/icons/` 폴더에 넣어주세요:
 
@@ -142,7 +162,7 @@ touch assets/icons/icon48.png
 touch assets/icons/icon128.png
 ```
 
-### 4단계: Chrome에 확장 프로그램 로드
+### 5단계: Chrome에 확장 프로그램 로드
 
 1. Chrome 브라우저를 엽니다.
 2. 주소창에 `chrome://extensions/`를 입력합니다.

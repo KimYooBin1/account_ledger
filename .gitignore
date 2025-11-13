@@ -22,6 +22,7 @@ src/config/firebase-config.js
 
 # 빌드된 CSS 파일 (소스에서 재생성 가능)
 src/options/options.build.css
+src/popup/popup.build.css
 *.build.css
 
 # macOS
