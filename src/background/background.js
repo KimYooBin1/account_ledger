@@ -146,6 +146,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
     return true;
   }
+
+  // 테스트 알림 생성 (시스템 알림 표시 확인용)
+  if (message.type === "TEST_NOTIFICATION") {
+    (async () => {
+      try {
+        await initializeFirebase();
+        const notificationId = await chrome.notifications.create({
+          type: "basic",
+          iconUrl: chrome.runtime.getURL("assets/icons/icon128.png"),
+          title: "알림 테스트",
+          message: "시스템 알림이 정상적으로 표시되는지 확인하세요.",
+          priority: 2,
+        });
+        console.log("Test notification created:", notificationId);
+        sendResponse({ success: true, id: notificationId });
+      } catch (error) {
+        console.error("Error creating test notification:", error);
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true;
+  }
 });
 
 // 이벤트 감지 처리

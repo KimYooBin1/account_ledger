@@ -567,6 +567,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // 알림 도움말 토글
+  const notificationHelpBtn = document.getElementById("notificationHelpBtn");
+  const notificationHelpPanel = document.getElementById(
+    "notificationHelpPanel"
+  );
+  if (notificationHelpBtn && notificationHelpPanel) {
+    notificationHelpBtn.addEventListener("click", () => {
+      notificationHelpPanel.classList.toggle("hidden");
+    });
+  }
+
   // Chrome 비밀번호 관리자 열기
   const openPwdBtn = document.getElementById("openPasswordManagerBtn");
   if (openPwdBtn) {
@@ -587,6 +598,76 @@ document.addEventListener("DOMContentLoaded", () => {
         urlInput.select();
         alert("복사 권한이 없어 선택만 했습니다. ⌘+C 로 복사해주세요.");
       }
+    });
+  }
+
+  // Chrome 알림 설정 링크 열기/복사
+  const openNotificationSettingsBtn = document.getElementById(
+    "openNotificationSettingsBtn"
+  );
+  const copyNotificationSettingsUrlBtn = document.getElementById(
+    "copyNotificationSettingsUrlBtn"
+  );
+  if (openNotificationSettingsBtn) {
+    openNotificationSettingsBtn.addEventListener("click", async () => {
+      const input = document.getElementById("notificationSettingsUrl");
+      const url = input?.value || "chrome://settings/content/notifications";
+      try {
+        await new Promise((resolve, reject) => {
+          try {
+            chrome.tabs.create({ url }, (tab) => {
+              if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+              } else {
+                resolve(tab);
+              }
+            });
+          } catch (err) {
+            reject(err);
+          }
+        });
+      } catch (e) {
+        alert(
+          "chrome:// 페이지를 직접 열 수 없습니다. 링크를 복사해 주소창에 붙여넣어 주세요."
+        );
+      }
+    });
+  }
+  if (copyNotificationSettingsUrlBtn) {
+    copyNotificationSettingsUrlBtn.addEventListener("click", async () => {
+      const input = document.getElementById("notificationSettingsUrl");
+      try {
+        await navigator.clipboard.writeText(input.value);
+        alert("링크가 복사되었습니다. 주소창에 붙여넣기 해주세요.");
+      } catch (e) {
+        input.focus();
+        input.select();
+        alert("복사 권한이 없어 선택만 했습니다. ⌘/Ctrl + C 로 복사해주세요.");
+      }
+    });
+  }
+
+  // 테스트 알림 보내기
+  const sendTestNotificationBtn = document.getElementById(
+    "sendTestNotificationBtn"
+  );
+  if (sendTestNotificationBtn) {
+    sendTestNotificationBtn.addEventListener("click", () => {
+      sendTestNotificationBtn.disabled = true;
+      const prev = sendTestNotificationBtn.textContent;
+      sendTestNotificationBtn.textContent = "전송 중...";
+
+      chrome.runtime.sendMessage({ type: "TEST_NOTIFICATION" }, (response) => {
+        sendTestNotificationBtn.disabled = false;
+        sendTestNotificationBtn.textContent = prev;
+        if (response && response.success) {
+          alert("테스트 알림을 보냈습니다. 알림 센터를 확인하세요.");
+        } else {
+          alert(
+            "알림 전송 중 오류가 발생했습니다. 설정을 확인하거나 다시 시도해주세요."
+          );
+        }
+      });
     });
   }
 

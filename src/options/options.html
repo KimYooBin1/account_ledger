@@ -48,11 +48,113 @@
         </div>
         <div class="bg-white p-6 rounded-lg shadow">
           <p class="text-gray-600 text-sm">알림</p>
-          <p
-            class="text-3xl font-bold text-green-600 mt-2"
-            id="notificationStatus"
+          <div class="flex items-center gap-2 mt-2">
+            <span
+              class="text-3xl font-bold text-green-600"
+              id="notificationStatus"
+            >
+              ON
+            </span>
+            <button
+              id="notificationHelpBtn"
+              class="group relative inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none"
+              aria-label="알림 도움말"
+              title="알림이 안 뜨나요? 설정 안내 보기"
+              type="button"
+            >
+              <span class="text-xs font-bold">?</span>
+              <div
+                id="notificationHelpHover"
+                class="pointer-events-none absolute left-1/2 -translate-x-1/2 top-8 z-10 hidden group-hover:block w-72 rounded-md border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg"
+              >
+                알람이 표시되지 않나요? 시스템/브라우저 알림 설정을 확인하세요.
+                클릭하면 자세한 안내가 열립니다.
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notification Help Panel -->
+      <div
+        id="notificationHelpPanel"
+        class="hidden mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4"
+      >
+        <h3 class="font-semibold text-gray-800 mb-2">
+          알림이 표시되지 않나요?
+        </h3>
+        <div
+          class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-800"
+        >
+          <div>
+            <p class="font-medium mb-1">macOS에서 확인</p>
+            <ol class="list-decimal list-inside space-y-1">
+              <li>
+                시스템 설정 → 알림 →
+                <span class="font-semibold">Google Chrome</span>
+              </li>
+              <li>알림 허용을 켬, 알림 스타일(배너/알림) 선택</li>
+              <li>사운드/배지 허용, 집중 모드(방해금지) 해제</li>
+            </ol>
+          </div>
+          <div>
+            <p class="font-medium mb-1">Windows에서 확인</p>
+            <ol class="list-decimal list-inside space-y-1">
+              <li>
+                설정 → 시스템 → 알림 →
+                <span class="font-semibold">알림</span> 켬
+              </li>
+              <li>
+                앱 목록에서 <span class="font-semibold">Google Chrome</span> 켬
+              </li>
+              <li>집중 지원(포커스 보조) 끔</li>
+            </ol>
+          </div>
+        </div>
+        <div class="mt-4">
+          <p class="font-medium text-gray-800 mb-2">Chrome 내부 설정</p>
+          <p class="text-sm text-gray-700 mb-2">
+            사이트 알림이 차단되어 있지 않은지 확인하세요.
+          </p>
+          <div class="flex items-center gap-2">
+            <input
+              id="notificationSettingsUrl"
+              type="text"
+              readonly
+              value="chrome://settings/content/notifications"
+              class="flex-1 rounded border border-gray-300 bg-gray-50 px-2 py-1 text-xs"
+            />
+            <button
+              id="copyNotificationSettingsUrlBtn"
+              class="px-2 py-1 text-xs rounded bg-gray-200 hover:bg-gray-300"
+              type="button"
+            >
+              복사
+            </button>
+            <button
+              id="openNotificationSettingsBtn"
+              class="px-2 py-1 text-xs rounded bg-gray-200 hover:bg-gray-300"
+              type="button"
+            >
+              열기
+            </button>
+          </div>
+        </div>
+        <p class="mt-3 text-xs text-gray-600">
+          참고: 일부 환경에서는 확장에서 chrome:// 페이지를 직접 열 수 없습니다.
+          이 경우 링크를 복사해 주소창에 붙여넣어 접속하세요.
+        </p>
+        <div class="mt-4">
+          <!-- <p class="font-medium text-gray-800 mb-2">동작 확인</p> -->
+          <button
+            id="sendTestNotificationBtn"
+            class="px-4 py-2 text-sm rounded bg-blue-500 text-white hover:bg-blue-600"
+            type="button"
           >
-            ON
+            테스트 알림 보내기
+          </button>
+          <p class="text-xs text-gray-600 mt-2">
+            버튼을 눌러 시스템 알림이 표시되는지 확인해보세요.
           </p>
         </div>
       </div>
