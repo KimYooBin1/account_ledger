@@ -321,6 +321,51 @@ async function refreshData() {
   }
 }
 
+// 메인 도메인 추출 (서브도메인 제거)
+function extractMainDomain(hostname) {
+  // www. 제거
+  hostname = hostname.replace(/^www\./, "");
+
+  // IP 주소인 경우 그대로 반환
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+    return hostname;
+  }
+
+  // localhost 등 단일 단어 도메인
+  if (!hostname.includes(".")) {
+    return hostname;
+  }
+
+  // 도메인 부분 분리
+  const parts = hostname.split(".");
+
+  // 최소 2개 부분 필요 (domain.com)
+  if (parts.length < 2) {
+    return hostname;
+  }
+
+  // 2단계 TLD 처리 (co.kr, com.au 등)
+  const twoLevelTLDs = [
+    "co",
+    "com",
+    "net",
+    "org",
+    "edu",
+    "gov",
+    "ac",
+    "or",
+    "ne",
+    "go",
+  ];
+  if (parts.length >= 3 && twoLevelTLDs.includes(parts[parts.length - 2])) {
+    // example.co.kr -> example.co.kr
+    return parts.slice(-3).join(".");
+  }
+
+  // 일반적인 경우: 마지막 2개 부분만 반환 (example.com)
+  return parts.slice(-2).join(".");
+}
+
 // URL에서 도메인 추출
 function extractDomain(url) {
   try {
@@ -330,7 +375,7 @@ function extractDomain(url) {
     }
 
     const urlObj = new URL(url);
-    return urlObj.hostname.replace("www.", "");
+    return extractMainDomain(urlObj.hostname);
   } catch {
     return null;
   }
