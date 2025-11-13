@@ -76,6 +76,12 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
+// Chrome 시작 시 만료 검사
+chrome.runtime.onStartup.addListener(async () => {
+  console.log("Chrome started, checking password expiry...");
+  await checkPasswordExpiry();
+});
+
 // Content Script로부터 메시지 수신
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("Message received:", message);
@@ -110,8 +116,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "UPDATE_ALL_WARNING_STATUS") {
     updateAllWarningStatus()
-      .then((result) => sendResponse({ success: true, data: result }))
-      .catch((error) => sendResponse({ success: false, error: error.message }));
+      .then(() => sendResponse({ success: true }))
+      .catch((error) => {
+        console.error("Error updating warning status:", error);
+        sendResponse({ success: false, error: error.message });
+      });
     return true;
   }
 });
@@ -326,8 +335,10 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
 // 비밀번호 만료 검사
 async function checkPasswordExpiry() {
+  console.log("=== checkPasswordExpiry started ===");
   try {
     await initializeFirebase();
+    console.log("✓ Firebase initialized");
 
     // 설정 가져오기
     const settings = await chrome.storage.sync.get([
@@ -337,12 +348,19 @@ async function checkPasswordExpiry() {
     const period = settings.passwordChangePeriod || 90;
     const notificationsEnabled = settings.notificationsEnabled !== false;
 
+    console.log(
+      `Settings: period=${period}, notificationsEnabled=${notificationsEnabled}`
+    );
+
     if (!notificationsEnabled) {
+      console.log("❌ Notifications disabled. Exiting.");
       return;
     }
 
     // 모든 계정 가져오기
     const accounts = await getAccounts();
+    console.log(`✓ Found ${accounts.length} accounts`);
+
     const now = new Date();
     const expiredAccounts = [];
 
@@ -353,7 +371,12 @@ async function checkPasswordExpiry() {
           (now - lastChange) / (1000 * 60 * 60 * 24)
         );
 
+        console.log(
+          `  ${account.domain}: ${daysSinceChange} days (period: ${period})`
+        );
+
         if (daysSinceChange >= period) {
+          console.log(`  ⚠️  ${account.domain} is EXPIRED!`);
           expiredAccounts.push({
             domain: account.domain,
             daysSinceChange,
@@ -362,25 +385,35 @@ async function checkPasswordExpiry() {
           // isWarning 플래그 업데이트
           await updateAccount(account.domain, { isWarning: true });
         }
+      } else {
+        console.log(`  ${account.domain}: No lastPasswordChangeDate`);
       }
     }
 
     // 만료된 계정이 있으면 알림 표시
     if (expiredAccounts.length > 0) {
       const domainsText = expiredAccounts.map((a) => a.domain).join(", ");
-      chrome.notifications.create({
+      console.log(
+        `🔔 Creating notification for ${expiredAccounts.length} expired accounts`
+      );
+
+      const notificationId = await chrome.notifications.create({
         type: "basic",
         iconUrl: chrome.runtime.getURL("assets/icons/icon128.png"),
         title: "비밀번호 변경 알림",
         message: `${expiredAccounts.length}개 사이트의 비밀번호 변경이 필요합니다.\n${domainsText}`,
         priority: 2,
       });
+
+      console.log(`✓ Notification created with ID: ${notificationId}`);
+    } else {
+      console.log("✓ No expired accounts found");
     }
 
     console.log(
-      `Password expiry check completed. ${expiredAccounts.length} expired accounts found.`
+      `=== checkPasswordExpiry completed. ${expiredAccounts.length} expired accounts found ===`
     );
   } catch (error) {
-    console.error("Error checking password expiry:", error);
+    console.error("❌ Error checking password expiry:", error);
   }
 }
