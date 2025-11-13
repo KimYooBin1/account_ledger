@@ -9,9 +9,18 @@
   <body class="bg-gray-50">
     <!-- Header -->
     <div class="bg-blue-600 text-white p-6 shadow-lg">
-      <div class="max-w-7xl mx-auto">
-        <h1 class="text-3xl font-bold">🔐 계정 기록장</h1>
-        <p class="text-blue-100 mt-2">Account Ledger - 전체 계정 관리</p>
+      <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold">🔐 계정 기록장</h1>
+          <p class="text-blue-100 mt-2">Account Ledger - 전체 계정 관리</p>
+        </div>
+        <button
+          id="showTutorialBtn"
+          class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition"
+          title="사용법 보기"
+        >
+          ? 사용법
+        </button>
       </div>
     </div>
 
@@ -331,6 +340,38 @@
       </div>
     </div>
 
+    <!-- Tutorial Styles -->
+    <style>
+      .tutorial-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 9998;
+      }
+
+      .tutorial-highlight {
+        position: relative;
+        z-index: 9999 !important;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.8),
+          0 0 0 9999px rgba(0, 0, 0, 0.7) !important;
+        border-radius: 8px;
+      }
+
+      .tutorial-tooltip {
+        position: fixed;
+        z-index: 10000;
+        max-width: 360px;
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      }
+    </style>
+
+    <script src="../common/tutorial.js"></script>
     <script src="options.js" type="module"></script>
   </body>
 </html>

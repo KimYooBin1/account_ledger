@@ -258,4 +258,77 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("openOptionsBtn")?.addEventListener("click", () => {
     chrome.runtime.openOptionsPage();
   });
+
+  // 튜토리얼 버튼
+  document.getElementById("showTutorialBtn")?.addEventListener("click", () => {
+    startTutorial();
+  });
+
+  // 첫 사용자인 경우 자동으로 튜토리얼 시작
+  checkAndStartTutorial();
 });
+
+// 튜토리얼 시작
+function startTutorial() {
+  const steps = [
+    {
+      target: "#currentDomain",
+      title: "현재 페이지 확인",
+      message:
+        "지금 보고 있는 웹사이트의 도메인이 여기에 표시됩니다. 이 사이트에 대한 계정 정보를 관리할 수 있습니다.",
+      position: "bottom",
+    },
+    {
+      target: "#accountInfo",
+      title: "계정 정보",
+      message:
+        "현재 사이트의 가입일, 마지막 로그인, 비밀번호 변경일이 표시됩니다. 자동으로 감지되거나 수동으로 기록할 수 있습니다.",
+      position: "bottom",
+    },
+    {
+      target: "#updateLoginBtn",
+      title: "로그인 기록",
+      message:
+        "이 버튼을 누르면 현재 시각으로 마지막 로그인 시간이 업데이트됩니다.",
+      position: "bottom",
+    },
+    {
+      target: "#updatePasswordBtn",
+      title: "비밀번호 변경 기록",
+      message:
+        "비밀번호를 변경한 후 이 버튼을 눌러 기록하세요. 설정된 주기가 지나면 경고가 표시됩니다.",
+      position: "bottom",
+    },
+    {
+      target: "#totalAccounts",
+      title: "전체 통계",
+      message:
+        "등록된 전체 계정 수와 비밀번호 변경이 필요한 경고 계정 수를 한눈에 확인할 수 있습니다.",
+      position: "top",
+    },
+    {
+      target: "#openOptionsBtn",
+      title: "전체 관리",
+      message:
+        "모든 계정을 한 번에 관리하려면 이 버튼을 눌러 전체 관리 페이지로 이동하세요. CSV 가져오기, 수동 등록 등의 고급 기능을 사용할 수 있습니다.",
+      position: "top",
+    },
+  ];
+
+  const tutorial = new TutorialManager(steps);
+  tutorial.markCompleted = async function () {
+    await chrome.storage.sync.set({ tutorialCompletedPopup: true });
+  };
+  tutorial.start();
+}
+
+// 첫 사용 시 튜토리얼 자동 시작
+async function checkAndStartTutorial() {
+  const result = await chrome.storage.sync.get(["tutorialCompletedPopup"]);
+  if (!result.tutorialCompletedPopup) {
+    // 페이지 로드 후 1초 뒤에 튜토리얼 시작 (UI가 준비될 시간)
+    setTimeout(() => {
+      startTutorial();
+    }, 1000);
+  }
+}

@@ -597,6 +597,14 @@ document.addEventListener("DOMContentLoaded", () => {
       closeEditModal();
     }
   });
+
+  // 튜토리얼 버튼
+  document.getElementById("showTutorialBtn")?.addEventListener("click", () => {
+    startTutorial();
+  });
+
+  // 첫 사용자인 경우 자동으로 튜토리얼 시작
+  checkAndStartTutorial();
 });
 
 // 안전하게 비밀번호 관리자 열기 (chrome://는 차단될 수 있어 예외 처리)
@@ -633,4 +641,69 @@ async function openPasswordManagerSafely() {
     "확장에서 chrome:// 페이지를 직접 열 수 없습니다.\n" +
       "위 안내 패널의 링크를 복사해 주소창에 붙여넣어 접속한 뒤, 내보내기를 진행해주세요."
   );
+}
+
+// 튜토리얼 시작
+function startTutorial() {
+  const steps = [
+    {
+      target: "#totalAccounts",
+      title: "통계 요약",
+      message:
+        "등록된 전체 계정 수, 경고 상태인 계정 수, 비밀번호 변경 주기, 알림 설정을 한눈에 확인할 수 있습니다.",
+      position: "bottom",
+    },
+    {
+      target: "#manualUrlInput",
+      title: "수동 계정 등록",
+      message:
+        "웹사이트 URL을 직접 입력하여 계정을 수동으로 등록할 수 있습니다. 자동 감지되지 않는 사이트도 여기서 추가하세요.",
+      position: "bottom",
+    },
+    {
+      target: "#csvFileInput",
+      title: "CSV 파일 가져오기",
+      message:
+        "Chrome 비밀번호 관리자에서 내보낸 CSV 파일을 업로드하여 한 번에 여러 계정을 가져올 수 있습니다. 물음표(?)를 클릭하면 자세한 방법을 확인할 수 있습니다.",
+      position: "bottom",
+    },
+    {
+      target: "#periodInput",
+      title: "비밀번호 변경 주기 설정",
+      message:
+        "비밀번호를 변경해야 하는 주기(일)를 설정합니다. 이 주기가 지나면 계정에 경고가 표시되고 알림을 받을 수 있습니다.",
+      position: "bottom",
+    },
+    {
+      target: "#searchInput",
+      title: "계정 검색",
+      message:
+        "등록된 계정이 많을 때 도메인 이름으로 빠르게 검색할 수 있습니다.",
+      position: "bottom",
+    },
+    {
+      target: "#accountsTableBody",
+      title: "계정 목록",
+      message:
+        "모든 계정의 상세 정보를 테이블로 확인할 수 있습니다. 경고 상태인 계정은 빨간색으로 강조 표시됩니다. 각 계정을 수정하거나 삭제할 수 있습니다.",
+      position: "top",
+    },
+  ];
+
+  const tutorial = new TutorialManager(steps);
+  tutorial.markCompleted = async function () {
+    await chrome.storage.sync.set({ tutorialCompletedOptions: true });
+  };
+  tutorial.start();
+}
+
+// 첫 사용 시 튜토리얼 자동 시작
+async function checkAndStartTutorial() {
+  const result = await chrome.storage.sync.get(["tutorialCompletedOptions"]);
+  if (!result.tutorialCompletedOptions) {
+    // 페이지 로드 후 1.5초 뒤에 튜토리얼 시작 (데이터 로딩 대기)
+    setTimeout(() => {
+      startTutorial();
+    }, 1500);
+  }
 }
