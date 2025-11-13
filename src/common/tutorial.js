@@ -197,6 +197,11 @@ class TutorialManager {
 
     // Mark tutorial as completed
     this.markCompleted();
+
+    // Call onComplete callback if exists
+    if (this.onComplete && typeof this.onComplete === "function") {
+      this.onComplete();
+    }
   }
 
   async markCompleted() {

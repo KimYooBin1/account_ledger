@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "계정 기록장 (Account Ledger)",
+  "name": "Account Ledger",
   "version": "1.0.0",
   "description": "웹사이트 계정 관리 자동화 및 비밀번호 변경 주기 알림을 통한 보안 강화",
   "icons": {

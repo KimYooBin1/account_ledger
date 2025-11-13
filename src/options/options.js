@@ -86,12 +86,17 @@ function renderAccountsTable(accounts = allAccounts) {
 
     tr.innerHTML = `
       <td class="px-6 py-4 whitespace-nowrap">
-        <div class="flex items-center">
+        <div class="flex items-center gap-2">
           <a href="https://${
             account.domain
           }" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium">
             ${account.domain}
           </a>
+          ${
+            account.isSampleData
+              ? '<span class="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded">샘플</span>'
+              : ""
+          }
         </div>
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -693,16 +698,170 @@ function startTutorial() {
   const tutorial = new TutorialManager(steps);
   tutorial.markCompleted = async function () {
     await chrome.storage.sync.set({ tutorialCompletedOptions: true });
+    // 샘플 데이터 삭제
+    await deleteSampleData();
+    // UI 새로고침
+    await refreshData();
   };
+
+  // 마지막 단계 후 팝업 안내 추가
+  tutorial.onComplete = function () {
+    showExtensionIconGuide();
+  };
+
   tutorial.start();
+}
+
+// 확장 프로그램 아이콘(팝업) 안내
+function showExtensionIconGuide() {
+  // 안내 오버레이 생성
+  const overlay = document.createElement("div");
+  overlay.className = "tutorial-overlay";
+  overlay.style.zIndex = "10001";
+
+  const guideBox = document.createElement("div");
+  guideBox.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10002;
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    text-align: center;
+  `;
+
+  guideBox.innerHTML = `
+    <div style="font-size: 48px; margin-bottom: 16px;">🔐</div>
+    <h2 style="font-size: 24px; font-weight: bold; color: #1f2937; margin-bottom: 12px;">
+      빠른 접근: 확장 프로그램 아이콘
+    </h2>
+    <p style="font-size: 16px; color: #4b5563; margin-bottom: 24px; line-height: 1.6;">
+      웹사이트를 방문할 때마다 <strong>브라우저 우측 상단</strong>의<br/>
+      <strong style="color: #2563eb;">확장 프로그램 아이콘(🔐)</strong>을 클릭하면<br/>
+      현재 사이트의 계정 정보를 빠르게 확인하고<br/>
+      로그인/비밀번호 변경을 기록할 수 있습니다.
+    </p>
+    <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+      <p style="font-size: 14px; color: #1e40af; margin: 0;">
+        💡 <strong>팁:</strong> 확장 프로그램을 툴바에 고정하려면<br/>
+        퍼즐 아이콘(🧩)을 클릭 후 핀(📌) 아이콘을 눌러주세요!
+      </p>
+    </div>
+    <div style="display: flex; gap: 12px; justify-content: center;">
+      <button id="finishTutorialBtn" style="
+        padding: 12px 32px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      ">
+        확인했습니다! ✨
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(guideBox);
+
+  // 버튼 호버 효과
+  const finishBtn = document.getElementById("finishTutorialBtn");
+  finishBtn.onmouseover = () => (finishBtn.style.background = "#1d4ed8");
+  finishBtn.onmouseout = () => (finishBtn.style.background = "#2563eb");
+
+  // 완료 버튼 클릭
+  finishBtn.onclick = () => {
+    overlay.remove();
+    guideBox.remove();
+  };
+
+  // 오버레이 클릭으로도 닫기
+  overlay.onclick = () => {
+    overlay.remove();
+    guideBox.remove();
+  };
+}
+
+// 샘플 데이터 생성
+async function createSampleData() {
+  try {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const ninetyDaysAgo = new Date(now.getTime() - 95 * 24 * 60 * 60 * 1000); // 경고 상태
+
+    // 정상 계정
+    await chrome.runtime.sendMessage({
+      type: "UPDATE_ACCOUNT",
+      domain: "example-normal.com",
+      updates: {
+        domain: "example-normal.com",
+        signUpDate: thirtyDaysAgo.toISOString(),
+        lastLoginDate: now.toISOString(),
+        lastPasswordChangeDate: thirtyDaysAgo.toISOString(),
+        isWarning: false,
+        createdAt: thirtyDaysAgo.toISOString(),
+        isSampleData: true, // 샘플 데이터 표시
+      },
+    });
+
+    // 경고 계정
+    await chrome.runtime.sendMessage({
+      type: "UPDATE_ACCOUNT",
+      domain: "example-warning.com",
+      updates: {
+        domain: "example-warning.com",
+        signUpDate: ninetyDaysAgo.toISOString(),
+        lastLoginDate: now.toISOString(),
+        lastPasswordChangeDate: ninetyDaysAgo.toISOString(),
+        isWarning: true,
+        createdAt: ninetyDaysAgo.toISOString(),
+        isSampleData: true, // 샘플 데이터 표시
+      },
+    });
+
+    console.log("Sample data created for tutorial");
+  } catch (error) {
+    console.error("Error creating sample data:", error);
+  }
+}
+
+// 샘플 데이터 삭제
+async function deleteSampleData() {
+  try {
+    // 샘플 데이터 삭제
+    await chrome.runtime.sendMessage({
+      type: "DELETE_ACCOUNT",
+      domain: "example-normal.com",
+    });
+
+    await chrome.runtime.sendMessage({
+      type: "DELETE_ACCOUNT",
+      domain: "example-warning.com",
+    });
+
+    console.log("Sample data deleted");
+  } catch (error) {
+    console.error("Error deleting sample data:", error);
+  }
 }
 
 // 첫 사용 시 튜토리얼 자동 시작
 async function checkAndStartTutorial() {
   const result = await chrome.storage.sync.get(["tutorialCompletedOptions"]);
   if (!result.tutorialCompletedOptions) {
-    // 페이지 로드 후 1.5초 뒤에 튜토리얼 시작 (데이터 로딩 대기)
-    setTimeout(() => {
+    // 샘플 데이터 생성
+    await createSampleData();
+
+    // 데이터 생성 및 렌더링 대기 후 튜토리얼 시작
+    setTimeout(async () => {
+      await refreshData(); // 샘플 데이터 표시
       startTutorial();
     }, 1500);
   }

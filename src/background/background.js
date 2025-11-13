@@ -71,6 +71,24 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     });
 
     console.log("Background service initialized");
+
+    // 처음 설치 시 환영 페이지(옵션 페이지) 열기
+    if (details.reason === "install") {
+      console.log("First install - opening welcome page with tutorial");
+      chrome.tabs.create({
+        url: chrome.runtime.getURL("src/options/options.html"),
+        active: true,
+      });
+    }
+
+    // 업데이트 시에도 옵션 페이지 열기 (변경 사항 안내)
+    if (details.reason === "update") {
+      console.log("Extension updated - opening options page");
+      chrome.tabs.create({
+        url: chrome.runtime.getURL("src/options/options.html"),
+        active: false, // 백그라운드 탭으로 열기
+      });
+    }
   } catch (error) {
     console.error("Initialization error:", error);
   }
@@ -218,14 +236,26 @@ async function getAccounts() {
   return accounts;
 }
 
-// 계정 업데이트
+// 계정 업데이트 또는 생성
 async function updateAccount(domain, updates) {
   await initializeFirebase();
 
   const collectionPath = getAccountsCollectionPath();
   const docRef = db.collection(collectionPath).doc(domain);
 
-  await docRef.update(updates);
+  // 문서 존재 여부 확인
+  const docSnap = await docRef.get();
+
+  if (docSnap.exists) {
+    // 기존 계정 업데이트
+    await docRef.update(updates);
+  } else {
+    // 새 계정 생성 (샘플 데이터 등)
+    await docRef.set({
+      domain: domain,
+      ...updates,
+    });
+  }
 
   // 업데이트 후 즉시 경고 상태 체크
   await checkSingleAccountExpiry(domain);
