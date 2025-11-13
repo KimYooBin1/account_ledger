@@ -205,7 +205,52 @@ async function updateAccount(domain, updates) {
   const docRef = db.collection(collectionPath).doc(domain);
 
   await docRef.update(updates);
+
+  // 업데이트 후 즉시 경고 상태 체크
+  await checkSingleAccountExpiry(domain);
+
   return { domain, updates };
+}
+
+// 단일 계정의 비밀번호 만료 상태 체크
+async function checkSingleAccountExpiry(domain) {
+  try {
+    await initializeFirebase();
+
+    // 설정 가져오기
+    const settings = await chrome.storage.sync.get(["passwordChangePeriod"]);
+    const period = settings.passwordChangePeriod || 90;
+
+    // 계정 정보 가져오기
+    const collectionPath = getAccountsCollectionPath();
+    const docRef = db.collection(collectionPath).doc(domain);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      return;
+    }
+
+    const account = docSnap.data();
+    const now = new Date();
+
+    // 비밀번호 변경일이 있는 경우만 체크
+    if (account.lastPasswordChangeDate) {
+      const lastChange = new Date(account.lastPasswordChangeDate);
+      const daysSinceChange = Math.floor(
+        (now - lastChange) / (1000 * 60 * 60 * 24)
+      );
+
+      const shouldWarn = daysSinceChange >= period;
+
+      // 현재 경고 상태와 다르면 업데이트
+      if (account.isWarning !== shouldWarn) {
+        await docRef.update({ isWarning: shouldWarn });
+        console.log(`Warning status updated for ${domain}: ${shouldWarn}`);
+      }
+    }
+  } catch (error) {
+    console.error("Error checking single account expiry:", error);
+  }
 }
 
 // 계정 삭제
