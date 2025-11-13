@@ -209,11 +209,6 @@ document.addEventListener("DOMContentLoaded", () => {
     registerCurrentAccount();
   });
 
-  // 수동 등록
-  document.getElementById("addManualBtn")?.addEventListener("click", () => {
-    registerCurrentAccount();
-  });
-
   // 옵션 페이지 열기
   document.getElementById("openOptionsBtn")?.addEventListener("click", () => {
     chrome.runtime.openOptionsPage();
