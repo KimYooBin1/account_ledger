@@ -107,6 +107,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch((error) => sendResponse({ success: false, error: error.message }));
     return true;
   }
+
+  if (message.type === "UPDATE_ALL_WARNING_STATUS") {
+    updateAllWarningStatus()
+      .then((result) => sendResponse({ success: true, data: result }))
+      .catch((error) => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
 });
 
 // 이벤트 감지 처리
@@ -262,6 +269,51 @@ async function deleteAccount(domain) {
 
   await docRef.delete();
   return { domain };
+}
+
+// 모든 계정의 경고 상태 업데이트
+async function updateAllWarningStatus() {
+  try {
+    await initializeFirebase();
+
+    // 설정 가져오기
+    const settings = await chrome.storage.sync.get(["passwordChangePeriod"]);
+    const period = settings.passwordChangePeriod || 90;
+
+    // 모든 계정 가져오기
+    const accounts = await getAccounts();
+    const now = new Date();
+    let updatedCount = 0;
+
+    const collectionPath = getAccountsCollectionPath();
+
+    for (const account of accounts) {
+      let shouldWarn = false;
+
+      if (account.lastPasswordChangeDate) {
+        const lastChange = new Date(account.lastPasswordChangeDate);
+        const daysSinceChange = Math.floor(
+          (now - lastChange) / (1000 * 60 * 60 * 24)
+        );
+
+        shouldWarn = daysSinceChange >= period;
+      }
+
+      // 현재 경고 상태와 다르면 업데이트
+      if (account.isWarning !== shouldWarn) {
+        const docRef = db.collection(collectionPath).doc(account.domain);
+        await docRef.update({ isWarning: shouldWarn });
+        updatedCount++;
+        console.log(`Updated ${account.domain}: isWarning = ${shouldWarn}`);
+      }
+    }
+
+    console.log(`Updated warning status for ${updatedCount} accounts`);
+    return { updatedCount };
+  } catch (error) {
+    console.error("Error updating all warning status:", error);
+    throw error;
+  }
 }
 
 // 알람 처리

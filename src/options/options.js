@@ -518,6 +518,17 @@ async function savePeriod() {
 
   try {
     await chrome.storage.sync.set({ passwordChangePeriod: period });
+
+    // 모든 계정의 경고 상태 즉시 업데이트
+    chrome.runtime.sendMessage(
+      { type: "UPDATE_ALL_WARNING_STATUS" },
+      (response) => {
+        if (response && response.success) {
+          console.log(`Updated ${response.data.updatedCount} accounts`);
+        }
+      }
+    );
+
     await refreshData();
     alert("설정이 저장되었습니다.");
   } catch (error) {
