@@ -6,6 +6,12 @@ __pycache__/
 *.egg-info/
 .Python
 
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
 # Firebase 설정 (개인 정보 포함)
 firebase-config.js
 src/background/firebase-config.js
@@ -13,6 +19,10 @@ src/config/firebase-config.js
 
 # 단, 템플릿은 포함
 !firebase-config.template.js
+
+# 빌드된 CSS 파일 (소스에서 재생성 가능)
+src/options/options.build.css
+*.build.css
 
 # macOS
 .DS_Store
