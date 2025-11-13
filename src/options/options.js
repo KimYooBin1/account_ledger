@@ -112,16 +112,6 @@ function renderAccountsTable(accounts = allAccounts) {
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm">
         <div class="flex gap-2">
-          <button class="update-login-btn px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition" data-domain="${
-            account.domain
-          }">
-            로그인
-          </button>
-          <button class="update-password-btn px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition" data-domain="${
-            account.domain
-          }">
-            비밀번호
-          </button>
           <button class="edit-btn px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition" data-domain="${
             account.domain
           }">
@@ -145,27 +135,6 @@ function renderAccountsTable(accounts = allAccounts) {
 
 // 테이블 버튼 이벤트 리스너
 function attachTableEventListeners() {
-  // 로그인 업데이트
-  document.querySelectorAll(".update-login-btn").forEach((btn) => {
-    btn.addEventListener("click", async (e) => {
-      const domain = e.target.dataset.domain;
-      await updateAccount(domain, { lastLoginDate: new Date().toISOString() });
-      await refreshData();
-    });
-  });
-
-  // 비밀번호 업데이트
-  document.querySelectorAll(".update-password-btn").forEach((btn) => {
-    btn.addEventListener("click", async (e) => {
-      const domain = e.target.dataset.domain;
-      await updateAccount(domain, {
-        lastPasswordChangeDate: new Date().toISOString(),
-        isWarning: false,
-      });
-      await refreshData();
-    });
-  });
-
   // 수정
   document.querySelectorAll(".edit-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
